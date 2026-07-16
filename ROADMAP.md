@@ -5,9 +5,9 @@ Este documento orienta o ciclo de vida do projeto, dividido em Fases (Macro Tare
 ## Fase 1: Fundação & Infraestrutura (Setup)
 **Objetivo:** Garantir que o ambiente de desenvolvimento seja reproduzível e isolado.
 * [x] **Micro 1.1:** Criar repositório no GitHub (`main`).
-* [ ] **Micro 1.2:** Estruturar arquivos de documentação (`README.md`, `ROADMAP.md`, `SETUP_GUIDE.md`).
-* [ ] **Micro 1.3:** Inicializar o projeto com `uv init` e criar `pyproject.toml`.
-* [ ] **Micro 1.4:** Adicionar dependências essenciais (`flet[all]`).
+* [x] **Micro 1.2:** Estruturar arquivos de documentação (`README.md`, `ROADMAP.md`, `SETUP_GUIDE.md`).
+* [x] **Micro 1.3:** Inicializar o projeto com `uv init` e criar `pyproject.toml`.
+* [x] **Micro 1.4:** Adicionar dependências essenciais (`flet[all]`).
 * [ ] **Micro 1.5:** Criar estrutura de pastas (`/assets`, `/src`, `/tests`).
 
 ## Fase 2: Layout Adaptativo (Frontend Base)
