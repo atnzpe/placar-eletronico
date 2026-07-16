@@ -1,3 +1,5 @@
+#Arquivo principal do Placar Eletrônico CBSA
+
 import flet as ft
 import time
 import threading
