@@ -9,6 +9,7 @@ authors = [
 ]
 dependencies = [
     "flet[all]>=0.24.0",
+    "fpdf>=1.7.2",
 ]
 
 [tool.uv]
