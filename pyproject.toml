@@ -1,9 +1,15 @@
 [project]
 name = "placar-eletronico"
 version = "0.1.0"
-description = "Add your description here"
+description = "Placar eletrônico adaptativo e de código aberto para esportes de combate (Padrão FIAS)."
 readme = "README.md"
 requires-python = ">=3.10"
-dependencies = [
-    "flet[all]>=0.86.0",
+authors = [
+    { name = "Gleyson Atanazio" }
 ]
+dependencies = [
+    "flet[all]>=0.24.0",
+]
+
+[tool.uv]
+# Configurações extras do gerenciador uv podem entrar aqui no futuro
