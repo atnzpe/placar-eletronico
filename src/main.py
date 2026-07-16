@@ -1,14 +1,14 @@
-#Arquivo principal do Placar Eletrônico CBSA
-
 import flet as ft
 import time
 import threading
-import csv
-import os
-from datetime import datetime
-from fpdf import FPDF
+import logging
 
-# --- PALETA OFICIAL CBSA ---
+# IMPORTAÇÃO DA NOSSA NOVA ARQUITETURA DE SERVIÇOS
+from services.pdf_service import gerar_pdf
+from services.csv_service import gerar_csv
+
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - [%(funcName)s] - %(message)s')
+
 COR_AZUL_CBSA = "#002776"
 COR_VERDE_CBSA = "#009c3b"
 COR_AMARELO_CBSA = "#ffdf00"
@@ -18,6 +18,8 @@ COR_FUNDO_CLARO = "#f4f4f5"
 COR_FUNDO_BRANCO = "#ffffff"
 
 def main(page: ft.Page):
+    logging.info("Inicializando a Interface Gráfica Principal (View).")
+    
     page.title = "Placar CBSA"
     page.bgcolor = COR_FUNDO_CLARO 
     page.padding = 10
@@ -38,11 +40,8 @@ def main(page: ft.Page):
 
     dropdown_style = ft.TextStyle(font_family="Open Sans", color=COR_TEXTO_ESCURO)
     
-    # --- CONTROLES DE RELATÓRIO (FLAG E FORMATO) ---
-    # CORREÇÃO APLICADA: label_style alterado para label_text_style
     gerar_relatorio_flag = ft.Switch(
-        label="Gerar Relatório Automático", 
-        value=True, 
+        label="Gerar Relatório Automático", value=True, 
         label_text_style=ft.TextStyle(color=COR_FUNDO_BRANCO, font_family="Montserrat", size=14), 
         active_color=COR_AMARELO_CBSA
     )
@@ -78,67 +77,16 @@ def main(page: ft.Page):
 
     def clear_data(color):
         if color == "red":
-            state["red_score"] = 0
-            red_score_display.value = "0"
-            red_name.value = ""
-            red_gym.value = ""
+            state["red_score"] = 0; red_score_display.value = "0"
+            red_name.value = ""; red_gym.value = ""
         else:
-            state["blue_score"] = 0
-            blue_score_display.value = "0"
-            blue_name.value = ""
-            blue_gym.value = ""
-        winner_display.value = ""
-        arrow_display.value = ""
+            state["blue_score"] = 0; blue_score_display.value = "0"
+            blue_name.value = ""; blue_gym.value = ""
+        winner_display.value = ""; arrow_display.value = ""
         page.update()
 
-    def gerar_pdf():
-        pdf = FPDF()
-        pdf.add_page()
-        pdf.set_font("Helvetica", 'B', 16)
-        pdf.cell(0, 10, "Súmula Oficial de Luta - CBSA", ln=True, align='C')
-        
-        pdf.set_font("Helvetica", '', 12)
-        pdf.cell(0, 10, f"Data/Hora: {datetime.now().strftime('%d/%m/%Y %H:%M')}", ln=True, align='C')
-        pdf.cell(0, 10, f"Categoria: {cat_dropdown.value} | Naipe: {gen_dropdown.value} | Peso: {weight_input.value} Kg", ln=True, align='C')
-        pdf.ln(10)
-        
-        pdf.set_font("Helvetica", 'B', 14)
-        pdf.set_text_color(219, 46, 32)
-        pdf.cell(95, 10, f"[VERMELHO] Atleta: {red_name.value or 'N/I'}", ln=False)
-        pdf.set_text_color(0, 39, 118)
-        pdf.cell(95, 10, f"[AZUL] Atleta: {blue_name.value or 'N/I'}", ln=True)
-        
-        pdf.set_text_color(0, 0, 0)
-        pdf.set_font("Helvetica", '', 12)
-        pdf.cell(95, 10, f"Academia: {red_gym.value or 'N/I'}", ln=False)
-        pdf.cell(95, 10, f"Academia: {blue_gym.value or 'N/I'}", ln=True)
-        
-        pdf.set_font("Helvetica", 'B', 14)
-        pdf.cell(95, 10, f"Pontos Finais: {state['red_score']}", ln=False)
-        pdf.cell(95, 10, f"Pontos Finais: {state['blue_score']}", ln=True)
-        
-        pdf.ln(10)
-        pdf.set_font("Helvetica", 'B', 16)
-        pdf.cell(0, 15, f"RESULTADO: {winner_display.value.upper()}", ln=True, align='C', border=1)
-        
-        nome_arquivo = f"Sumula_{red_name.value or 'V'}_vs_{blue_name.value or 'A'}_{datetime.now().strftime('%H%M%S')}.pdf".replace(" ", "_")
-        pdf.output(nome_arquivo)
-        return nome_arquivo
-
-    def gerar_csv():
-        file_path = "resultados_cbsa.csv"
-        file_exists = os.path.isfile(file_path)
-        with open(file_path, "a", newline="", encoding="utf-8-sig") as f:
-            writer = csv.writer(f, delimiter=";")
-            if not file_exists:
-                writer.writerow(["Data/Hora", "Categoria", "Naipe", "Peso(Kg)", "Atleta_Verm", "Acad_Verm", "Pts_Verm", "Atleta_Azul", "Acad_Azul", "Pts_Azul", "Resultado"])
-            writer.writerow([
-                datetime.now().strftime("%d/%m/%Y %H:%M"), cat_dropdown.value, gen_dropdown.value, weight_input.value,
-                red_name.value, red_gym.value, state["red_score"], blue_name.value, blue_gym.value, state["blue_score"], winner_display.value
-            ])
-        return file_path
-
     def finish_match(e=None):
+        logging.info("Luta encerrada pela UI. Disparando regras de negócio e serviços.")
         state["timer_running"] = False
         
         if state["red_score"] > state["blue_score"]:
@@ -159,12 +107,20 @@ def main(page: ft.Page):
             
         page.update()
         
+        # Coleta dos dados puros para enviar ao Serviço (Princípio de MVVM: Modelagem de Dados)
+        dados_luta = {
+            "categoria": cat_dropdown.value, "naipe": gen_dropdown.value, "peso": weight_input.value,
+            "red_name": red_name.value, "red_gym": red_gym.value, "red_score": state["red_score"],
+            "blue_name": blue_name.value, "blue_gym": blue_gym.value, "blue_score": state["blue_score"],
+            "resultado": winner_display.value
+        }
+        
         if gerar_relatorio_flag.value:
             if formato_relatorio.value == "CSV":
-                arquivo_gerado = gerar_csv()
+                arquivo_gerado = gerar_csv(dados_luta) # Chamada limpa do serviço
                 mensagem = f"Luta salva na planilha: {arquivo_gerado}"
             else:
-                arquivo_gerado = gerar_pdf()
+                arquivo_gerado = gerar_pdf(dados_luta) # Chamada limpa do serviço
                 mensagem = f"Súmula PDF gerada: {arquivo_gerado}"
                 
             page.snack_bar = ft.SnackBar(ft.Text(mensagem, color=COR_FUNDO_BRANCO, font_family="Open Sans"), bgcolor=COR_VERDE_CBSA)
@@ -174,7 +130,6 @@ def main(page: ft.Page):
         page.snack_bar.open = True
         page.update()
 
-    # --- LÓGICA DO CRONÔMETRO ---
     timer_input = ft.TextField(
         value="05:00", text_align=ft.TextAlign.CENTER, text_size=55, 
         text_style=ft.TextStyle(font_family="Montserrat", weight=ft.FontWeight.BOLD, color=COR_TEXTO_ESCURO),
@@ -188,10 +143,8 @@ def main(page: ft.Page):
                 mins, secs = divmod(state["time_left"], 60)
                 timer_input.value = f"{mins:02d}:{secs:02d}"
                 page.update()
-                
                 if state["time_left"] == 0:
                     finish_match() 
-                    
             time.sleep(1)
 
     threading.Thread(target=update_timer_thread, daemon=True).start()
@@ -201,32 +154,22 @@ def main(page: ft.Page):
             try:
                 parts = timer_input.value.split(":")
                 state["time_left"] = int(parts[0]) * 60 + int(parts[1])
-            except:
+            except Exception as ex:
+                logging.error(f"Erro na UI ao iniciar timer: {ex}")
                 pass
             state["timer_running"] = True
-            winner_display.value = ""
-            arrow_display.value = ""
+            winner_display.value = ""; arrow_display.value = ""
             page.update()
 
     def pause_timer(e):
         state["timer_running"] = False
         page.update()
-
-    # --- CONSTRUÇÃO DA INTERFACE ---
     
     menu = ft.Container(
-        bgcolor=COR_VERDE_CBSA,
-        padding=5,
+        bgcolor=COR_VERDE_CBSA, padding=5,
         content=ft.Row([
-            ft.Row([
-                gerar_relatorio_flag,
-                ft.Text("Formato:", color=COR_FUNDO_BRANCO, font_family="Montserrat", size=14),
-                formato_relatorio
-            ]),
-            ft.Row([
-                ft.TextButton("Informar", style=ft.ButtonStyle(color=COR_FUNDO_BRANCO)),
-                ft.TextButton("Sair do Programa", style=ft.ButtonStyle(color=COR_FUNDO_BRANCO), on_click=lambda _: page.window.destroy())
-            ])
+            ft.Row([gerar_relatorio_flag, ft.Text("Formato:", color=COR_FUNDO_BRANCO, font_family="Montserrat", size=14), formato_relatorio]),
+            ft.Row([ft.TextButton("Informar", style=ft.ButtonStyle(color=COR_FUNDO_BRANCO)), ft.TextButton("Sair do Programa", style=ft.ButtonStyle(color=COR_FUNDO_BRANCO), on_click=lambda _: page.window.destroy())])
         ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
     )
 
@@ -235,15 +178,12 @@ def main(page: ft.Page):
             ft.Image(src="brand.png", height=90, fit=ft.ImageFit.CONTAIN),
             ft.Text("CONFEDERAÇÃO BRASILEIRA DE SAMBO", color=COR_VERDE_CBSA, size=32, font_family="Montserrat", weight=ft.FontWeight.BOLD, expand=True, text_align=ft.TextAlign.CENTER),
             ft.Image(src="upasa.jpg", height=90, fit=ft.ImageFit.CONTAIN),
-            ft.Container(width=20), 
-            ft.Image(src="cob.jpg", height=90, fit=ft.ImageFit.CONTAIN),
+            ft.Container(width=20), ft.Image(src="cob.jpg", height=90, fit=ft.ImageFit.CONTAIN),
         ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
         
         ft.Row([
-            ft.Text("Categoria:", color=COR_TEXTO_ESCURO, size=20, font_family="Montserrat", weight=ft.FontWeight.BOLD),
-            cat_dropdown, gen_dropdown,
-            ft.Text("Peso:", color=COR_TEXTO_ESCURO, size=20, font_family="Montserrat", weight=ft.FontWeight.BOLD),
-            weight_input, ft.Text("Kg", color=COR_TEXTO_ESCURO, size=20, font_family="Montserrat", weight=ft.FontWeight.BOLD),
+            ft.Text("Categoria:", color=COR_TEXTO_ESCURO, size=20, font_family="Montserrat", weight=ft.FontWeight.BOLD), cat_dropdown, gen_dropdown,
+            ft.Text("Peso:", color=COR_TEXTO_ESCURO, size=20, font_family="Montserrat", weight=ft.FontWeight.BOLD), weight_input, ft.Text("Kg", color=COR_TEXTO_ESCURO, size=20, font_family="Montserrat", weight=ft.FontWeight.BOLD),
         ], alignment=ft.MainAxisAlignment.CENTER)
     ])
 
@@ -255,9 +195,7 @@ def main(page: ft.Page):
             ft.ElevatedButton("Parar", on_click=pause_timer, color=COR_TEXTO_ESCURO, bgcolor=COR_FUNDO_BRANCO),
             ft.ElevatedButton("Terminar", on_click=finish_match, color=COR_FUNDO_BRANCO, bgcolor=COR_TEXTO_ESCURO)
         ], alignment=ft.MainAxisAlignment.CENTER),
-        ft.Container(height=10),
-        winner_display,
-        arrow_display
+        ft.Container(height=10), winner_display, arrow_display
     ], alignment=ft.MainAxisAlignment.START, horizontal_alignment=ft.CrossAxisAlignment.CENTER, expand=1)
 
     def create_athlete_panel(color_bg, score_display, color_id, ref_name, ref_gym):
@@ -296,5 +234,4 @@ def main(page: ft.Page):
 
     page.add(menu, ft.Container(height=5), header, ft.Container(height=10), ft.Row([red_panel, center_col, blue_panel], expand=True, alignment=ft.MainAxisAlignment.SPACE_BETWEEN))
 
-# CORREÇÃO APLICADA: ft.app alterado para ft.run 
 ft.run(target=main, assets_dir=".")
