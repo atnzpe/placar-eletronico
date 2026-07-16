@@ -8,7 +8,7 @@ Este documento orienta o ciclo de vida do projeto, dividido em Fases (Macro Tare
 * [x] **Micro 1.2:** Estruturar arquivos de documentação (`README.md`, `ROADMAP.md`, `SETUP_GUIDE.md`).
 * [x] **Micro 1.3:** Inicializar o projeto com `uv init` e criar `pyproject.toml`.
 * [x] **Micro 1.4:** Adicionar dependências essenciais (`flet[all]`).
-* [ ] **Micro 1.5:** Criar estrutura de pastas (`/assets`, `/src`, `/tests`).
+* [x] **Micro 1.5:** Criar estrutura de pastas (`/assets`, `/src`, `/tests`).
 
 ## Fase 2: Layout Adaptativo (Frontend Base)
 **Objetivo:** Construir o esqueleto visual responsivo sem ainda ligar a lógica de tempo.
