@@ -32,8 +32,8 @@ O fluxo de trabalho padrão exigido no projeto é: `Criar Issue` -> `Criar Branc
   * [x] *Micro da Micro:* Migrar gravação de planilhas para `csv_service.py`.
   * [x] *Micro da Micro:* Escrever testes automatizados (QA) para geração de relatórios.
 * [ ] **Micro 2.2:** Componentização da Interface de Usuário (Isolar UI).
-  * [ ] *Micro da Micro:* Extrair visual do atleta para `src/components/athlete_panel.py`.
-  * [ ] *Micro da Micro:* Isolar o relógio central em `src/components/timer_display.py`.
+  * [x] *Micro da Micro:* Extrair visual do atleta para `src/components/athlete_panel.py`.
+  * [x] *Micro da Micro:* Isolar o relógio central em `src/components/timer_display.py`.
 * [ ] **Micro 2.3:** Configuração Base e Roteamento (`page`).
   * [ ] *Micro da Micro:* Configurar `page.padding = 0` e injetar paleta global CBSA.
   * [ ] *Micro da Micro:* Ativar `SafeArea` para evitar cortes em smartphones (Android/iOS).
