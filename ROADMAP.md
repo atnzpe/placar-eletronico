@@ -35,8 +35,8 @@ O fluxo de trabalho padrão exigido no projeto é: `Criar Issue` -> `Criar Branc
   * [x] *Micro da Micro:* Extrair visual do atleta para `src/components/athlete_panel.py`.
   * [x] *Micro da Micro:* Isolar o relógio central em `src/components/timer_display.py`.
 * [ ] **Micro 2.3:** Configuração Base e Roteamento (`page`).
-  * [ ] *Micro da Micro:* Configurar `page.padding = 0` e injetar paleta global CBSA.
-  * [ ] *Micro da Micro:* Ativar `SafeArea` para evitar cortes em smartphones (Android/iOS).
+  * [x] *Micro da Micro:* Configurar `page.padding = 0` e injetar paleta global CBSA.
+  * [x] *Micro da Micro:* Ativar `SafeArea` para evitar cortes em smartphones (Android/iOS).
   * [ ] *Micro da Micro:* Criar sistema de rotas separando Visão da Mesa de Controle e Visão do Telão Público.
 * [ ] **Micro 2.4:** Redimensionamento Dinâmico (Responsividade Extrema).
   * [ ] *Micro da Micro:* Mapear o gatilho de evento `page.on_resize`.
