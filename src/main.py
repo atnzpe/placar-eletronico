@@ -3,9 +3,10 @@ import time
 import threading
 import logging
 
-# IMPORTAÇÃO DA NOSSA NOVA ARQUITETURA DE SERVIÇOS
+# IMPORTAÇÃO DA NOSSA ARQUITETURA (SERVIÇOS E COMPONENTES)
 from services.pdf_service import gerar_pdf
 from services.csv_service import gerar_csv
+from components.athlete_panel import build_athlete_panel
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - [%(funcName)s] - %(message)s')
 
@@ -55,6 +56,7 @@ def main(page: ft.Page):
     gen_dropdown = ft.Dropdown(options=[ft.dropdown.Option("Feminino"), ft.dropdown.Option("Masculino")], value="Feminino", width=150, text_style=dropdown_style, bgcolor=COR_FUNDO_BRANCO, border_color=COR_TEXTO_ESCURO)
     weight_input = ft.TextField(value="52", width=80, text_style=dropdown_style, bgcolor=COR_FUNDO_BRANCO, border_color=COR_TEXTO_ESCURO)
     
+    # Referências Visuais dos Atletas
     red_name = ft.TextField(bgcolor=COR_FUNDO_BRANCO, color=COR_TEXTO_ESCURO, height=40, expand=True, content_padding=5, text_style=ft.TextStyle(font_family="Open Sans"))
     red_gym = ft.TextField(bgcolor=COR_FUNDO_BRANCO, color=COR_TEXTO_ESCURO, height=40, expand=True, content_padding=5, text_style=ft.TextStyle(font_family="Open Sans"))
     blue_name = ft.TextField(bgcolor=COR_FUNDO_BRANCO, color=COR_TEXTO_ESCURO, height=40, expand=True, content_padding=5, text_style=ft.TextStyle(font_family="Open Sans"))
@@ -66,7 +68,9 @@ def main(page: ft.Page):
     winner_display = ft.TextField(value="", text_align=ft.TextAlign.CENTER, text_size=20, text_style=ft.TextStyle(font_family="Montserrat", weight=ft.FontWeight.BOLD), bgcolor=COR_FUNDO_BRANCO, width=220, height=40, border_color=COR_TEXTO_ESCURO)
     arrow_display = ft.TextField(value="", text_align=ft.TextAlign.CENTER, text_size=20, text_style=ft.TextStyle(font_family="Montserrat", weight=ft.FontWeight.BOLD), bgcolor=COR_FUNDO_BRANCO, width=220, height=40, border_color=COR_TEXTO_ESCURO)
 
+    # REGRAS DE NEGÓCIO (Enviadas como callback para o Componente)
     def change_score(color, amount):
+        logging.debug(f"Alterando score via evento do componente: {color} | Valor: {amount}")
         if color == "red":
             state["red_score"] = max(0, state["red_score"] + amount)
             red_score_display.value = str(state["red_score"])
@@ -76,6 +80,7 @@ def main(page: ft.Page):
         page.update()
 
     def clear_data(color):
+        logging.info(f"Limpando dados via evento do componente: {color}")
         if color == "red":
             state["red_score"] = 0; red_score_display.value = "0"
             red_name.value = ""; red_gym.value = ""
@@ -86,7 +91,7 @@ def main(page: ft.Page):
         page.update()
 
     def finish_match(e=None):
-        logging.info("Luta encerrada pela UI. Disparando regras de negócio e serviços.")
+        logging.info("Luta encerrada. Disparando geração de relatórios.")
         state["timer_running"] = False
         
         if state["red_score"] > state["blue_score"]:
@@ -107,7 +112,6 @@ def main(page: ft.Page):
             
         page.update()
         
-        # Coleta dos dados puros para enviar ao Serviço (Princípio de MVVM: Modelagem de Dados)
         dados_luta = {
             "categoria": cat_dropdown.value, "naipe": gen_dropdown.value, "peso": weight_input.value,
             "red_name": red_name.value, "red_gym": red_gym.value, "red_score": state["red_score"],
@@ -117,10 +121,10 @@ def main(page: ft.Page):
         
         if gerar_relatorio_flag.value:
             if formato_relatorio.value == "CSV":
-                arquivo_gerado = gerar_csv(dados_luta) # Chamada limpa do serviço
+                arquivo_gerado = gerar_csv(dados_luta)
                 mensagem = f"Luta salva na planilha: {arquivo_gerado}"
             else:
-                arquivo_gerado = gerar_pdf(dados_luta) # Chamada limpa do serviço
+                arquivo_gerado = gerar_pdf(dados_luta)
                 mensagem = f"Súmula PDF gerada: {arquivo_gerado}"
                 
             page.snack_bar = ft.SnackBar(ft.Text(mensagem, color=COR_FUNDO_BRANCO, font_family="Open Sans"), bgcolor=COR_VERDE_CBSA)
@@ -198,39 +202,16 @@ def main(page: ft.Page):
         ft.Container(height=10), winner_display, arrow_display
     ], alignment=ft.MainAxisAlignment.START, horizontal_alignment=ft.CrossAxisAlignment.CENTER, expand=1)
 
-    def create_athlete_panel(color_bg, score_display, color_id, ref_name, ref_gym):
-        return ft.Container(
-            bgcolor=color_bg, padding=15, expand=2, border_radius=10, 
-            content=ft.Column([
-                ft.Row([ft.Text("Atleta:", size=18, color=COR_FUNDO_BRANCO, font_family="Montserrat"), ref_name]),
-                ft.Row([ft.Text("Academia:", size=18, color=COR_FUNDO_BRANCO, font_family="Montserrat"), ref_gym]),
-                ft.Row([
-                    ft.Column([
-                        ft.Text("== Pontos ==", size=20, color=COR_FUNDO_BRANCO, font_family="Montserrat"),
-                        ft.Row([
-                            ft.ElevatedButton("+1", on_click=lambda e, c=color_id: change_score(c, 1), color=COR_TEXTO_ESCURO, bgcolor=COR_FUNDO_BRANCO),
-                            ft.ElevatedButton("+2", on_click=lambda e, c=color_id: change_score(c, 2), color=COR_TEXTO_ESCURO, bgcolor=COR_FUNDO_BRANCO),
-                            ft.ElevatedButton("+4", on_click=lambda e, c=color_id: change_score(c, 4), color=COR_TEXTO_ESCURO, bgcolor=COR_FUNDO_BRANCO),
-                        ]),
-                        ft.ElevatedButton("- 1", on_click=lambda e, c=color_id: change_score(c, -1), color=COR_FUNDO_BRANCO, bgcolor=COR_TEXTO_ESCURO, width=150),
-                        ft.Container(height=10),
-                        ft.Text("Vantagem", size=16, color=COR_FUNDO_BRANCO, font_family="Montserrat"),
-                        ft.TextField(value="0", text_align=ft.TextAlign.CENTER, text_size=25, width=100, height=60, bgcolor=COR_FUNDO_BRANCO, color=COR_TEXTO_ESCURO, border_color=COR_TEXTO_ESCURO)
-                    ], alignment=ft.MainAxisAlignment.START),
-                    ft.Container(content=score_display, bgcolor=COR_FUNDO_BRANCO, border=ft.border.all(2, COR_TEXTO_ESCURO), border_radius=5, expand=True, alignment=ft.alignment.center)
-                ], expand=True),
-                ft.Row([
-                    ft.ElevatedButton("Limpar Dados", on_click=lambda e, c=color_id: clear_data(c), color=COR_TEXTO_ESCURO, bgcolor=COR_AMARELO_CBSA), 
-                    ft.Row([
-                        ft.Text("Faltas", size=16, color=COR_FUNDO_BRANCO, font_family="Montserrat"),
-                        ft.TextField(value="0", text_align=ft.TextAlign.CENTER, text_size=25, width=70, height=60, bgcolor=COR_FUNDO_BRANCO, color=COR_TEXTO_ESCURO, border_color=COR_TEXTO_ESCURO)
-                    ])
-                ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
-            ])
-        )
-
-    red_panel = create_athlete_panel(COR_VERMELHO_ALERTA, red_score_display, "red", red_name, red_gym)
-    blue_panel = create_athlete_panel(COR_AZUL_CBSA, blue_score_display, "blue", blue_name, blue_gym)
+    # INSTANCIAÇÃO DOS COMPONENTES VISUAIS ISOLADOS
+    red_panel = build_athlete_panel(
+        color_bg=COR_VERMELHO_ALERTA, score_display=red_score_display, color_id="red", 
+        ref_name=red_name, ref_gym=red_gym, change_score_cb=change_score, clear_data_cb=clear_data
+    )
+    
+    blue_panel = build_athlete_panel(
+        color_bg=COR_AZUL_CBSA, score_display=blue_score_display, color_id="blue", 
+        ref_name=blue_name, ref_gym=blue_gym, change_score_cb=change_score, clear_data_cb=clear_data
+    )
 
     page.add(menu, ft.Container(height=5), header, ft.Container(height=10), ft.Row([red_panel, center_col, blue_panel], expand=True, alignment=ft.MainAxisAlignment.SPACE_BETWEEN))
 
