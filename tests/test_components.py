@@ -1,6 +1,7 @@
 import unittest
 import flet as ft
 from src.components.athlete_panel import build_athlete_panel
+from src.components.timer_display import build_timer_display
 
 class TestAthletePanelComponent(unittest.TestCase):
     """
@@ -33,5 +34,19 @@ class TestAthletePanelComponent(unittest.TestCase):
         # Assegura que o retorno é um Container e não falhou no meio da montagem
         self.assertIsInstance(painel, ft.Container, "O componente falhou em retornar um ft.Container válido.")
 
+    def test_timer_display_retorna_column(self):
+        """Valida se o componente do relógio é instanciado sem erros e retorna uma ft.Column"""
+        mock_timer_input = ft.TextField(value="05:00")
+        
+        relogio = build_timer_display(
+            timer_input=mock_timer_input,
+            start_cb=lambda e: None,
+            pause_cb=lambda e: None,
+            finish_cb=lambda e: None
+        )
+        
+        # Assegura que o retorno é uma Column e não falhou no meio da montagem
+        self.assertIsInstance(relogio, ft.Column, "O componente de timer falhou ao renderizar a base visual.")
+    
 if __name__ == '__main__':
     unittest.main()
