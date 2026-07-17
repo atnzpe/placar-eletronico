@@ -51,7 +51,7 @@ source .venv/bin/activate
 Com o ambiente ativado (você verá (.venv) no início da linha do terminal), execute o comando abaixo para iniciar a interface do placar:
 
 ```bash
-uv run flet run main.py
+uv run flet run src/main.py
 ```
 
 ## Dica: Para fechar a aplicação e voltar ao terminal normal, basta clicar na janela do terminal e pressionar Ctrl+C.
